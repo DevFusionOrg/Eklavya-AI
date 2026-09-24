@@ -1,4 +1,8 @@
-export default function ApplicantPage() {
+import Link from "next/link";
+import { listSchemes } from "../../lib/api";
+
+export default async function ApplicantPage() {
+  const schemes = await listSchemes().catch(() => []);
   return (
     <section aria-labelledby="applicant-title">
       <div className="mb-8">
@@ -16,7 +20,15 @@ export default function ApplicantPage() {
       <div className="mt-6 rounded-xl border border-border bg-white p-6">
         <h2 className="text-lg font-bold">Start an application</h2>
         <p className="mt-2 text-sm text-muted">Choose a scholarship scheme to begin. Your progress saves automatically.</p>
-        <button className="mt-4 rounded-md bg-brand px-4 py-3 font-bold text-white hover:bg-green-800">Browse schemes</button>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {schemes.filter((scheme) => scheme.is_active).map((scheme) => (
+            <Link href={`/applicant/apply/${scheme.code}`} className="rounded-lg border border-border p-4 hover:border-brand hover:bg-green-50" key={scheme.id}>
+              <span className="font-bold">{scheme.name}</span>
+              <span className="mt-1 block text-sm text-muted">{scheme.description ?? "Open the dynamic application form."}</span>
+            </Link>
+          ))}
+          {!schemes.length && <p className="text-sm text-muted">No schemes are open right now.</p>}
+        </div>
       </div>
     </section>
   );
