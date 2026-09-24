@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.v1.audit import router as audit_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.health import router as health_router
+from app.api.v1.rules import router as rules_router
 from app.api.v1.schemes import router as schemes_router
 from app.audit.middleware import MutationAuditMiddleware
 from app.core.config import settings
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(audit_router, prefix="/api/v1")
     application.include_router(schemes_router, prefix="/api/v1")
+    application.include_router(rules_router, prefix="/api/v1")
 
     logging.getLogger(__name__).info("application_started")
     return application
