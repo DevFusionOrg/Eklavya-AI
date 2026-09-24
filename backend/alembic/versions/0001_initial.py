@@ -7,8 +7,16 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    pass
+    import app.db.models  # noqa: F401
+    from alembic import op
+    from app.db.base import Base
+
+    Base.metadata.create_all(op.get_bind())
 
 
 def downgrade() -> None:
-    pass
+    import app.db.models  # noqa: F401
+    from alembic import op
+    from app.db.base import Base
+
+    Base.metadata.drop_all(op.get_bind())

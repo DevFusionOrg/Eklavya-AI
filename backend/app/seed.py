@@ -1,5 +1,5 @@
 def main() -> None:
-    print("No seed data configured for the initial scaffold.")
+    print("Seed skeleton: schemes, roles, and development users will be added here.")
 
 
 if __name__ == "__main__":
