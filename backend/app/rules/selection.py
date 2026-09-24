@@ -37,19 +37,21 @@ def select_candidates(
     eligible.sort(
         key=lambda item: (
             -item["selection"]["score"],
-            *(item.get(field, "") for field in config.get("tie_breakers", [])),
+            *(str(item.get(field, "")) for field in config.get("tie_breakers", [])),
+            str(item.get("id", "")),
         )
     )
     quotas = config.get("quotas", [])
     selected: list[dict[str, Any]] = []
     for item in eligible:
-        if all(
+        quota_ok = all(
             sum(
                 1 for chosen in selected if chosen.get(quota["field"]) == quota["value"]
             )
             < int(quota["limit"])
             or item.get(quota["field"]) != quota["value"]
             for quota in quotas
-        ):
+        )
+        if quota_ok:
             selected.append(item)
     return selected

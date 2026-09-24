@@ -49,6 +49,12 @@ async def notify_deficiency(
         )
 
 
+async def notify_applicant(
+    session: AsyncSession, application: Application, message: str
+) -> None:
+    await notify_deficiency(session, application, message)
+
+
 async def set_correction_deadline(
     application: Application, validation_config: dict[str, Any]
 ) -> None:

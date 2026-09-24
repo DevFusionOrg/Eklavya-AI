@@ -333,6 +333,14 @@ class Selection(Entity):
     )
     rank: Mapped[int | None] = mapped_column(Integer)
     remarks: Mapped[str | None] = mapped_column(Text)
+    list_status: Mapped[str] = mapped_column(
+        String(16), default="PROVISIONAL", nullable=False
+    )
+    score: Mapped[Decimal | None] = mapped_column(Numeric(12, 4))
+    score_breakdown: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
+    is_frozen: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class Award(Entity):

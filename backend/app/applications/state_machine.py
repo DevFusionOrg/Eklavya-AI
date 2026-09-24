@@ -54,6 +54,7 @@ TRANSITIONS = (
     Transition("OFFICER_VERIFIED", "SELECTED", frozenset({"COMMITTEE_MEMBER"})),
     Transition("OFFICER_VERIFIED", "NOT_SELECTED", frozenset({"COMMITTEE_MEMBER"})),
     Transition("OFFICER_VERIFIED", "WAITLISTED", frozenset({"COMMITTEE_MEMBER"})),
+    Transition("WAITLISTED", "APPROVED", frozenset({"ADMIN"})),
     Transition("SELECTED", "APPROVED", frozenset({"ADMIN"})),
     Transition("APPROVED", "AWARDED", frozenset({"ADMIN"})),
     Transition("AWARDED", "CLOSED", frozenset({"ADMIN"})),
