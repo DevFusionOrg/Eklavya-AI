@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     auth_rate_window_seconds: int = 60
     max_login_failures: int = 5
     lockout_minutes: int = 15
+    minio_bucket: str = "eklavya-documents"
+    document_max_size_bytes: int = 10 * 1024 * 1024
+    document_max_sizes: dict[str, int] = Field(default_factory=dict)
+    document_url_expiry_seconds: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",
