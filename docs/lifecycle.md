@@ -1,0 +1,26 @@
+# Application lifecycle
+
+The application service enforces the following state machine. Every transition
+creates an `application_status_history` row and an audit entry. Applicant
+withdrawal is represented by the terminal `CLOSED` state.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> SUBMITTED: APPLICANT
+    DRAFT --> CLOSED: APPLICANT withdraw
+    SUBMITTED --> AUTO_VALIDATION: SYSTEM
+    SUBMITTED --> CLOSED: APPLICANT withdraw
+    AUTO_VALIDATION --> DEFICIENT: SYSTEM/SCRUTINY_OFFICER
+    AUTO_VALIDATION --> UNDER_SCRUTINY: SYSTEM/SCRUTINY_OFFICER
+    DEFICIENT --> RESUBMITTED: APPLICANT
+    DEFICIENT --> CLOSED: APPLICANT withdraw
+    RESUBMITTED --> UNDER_SCRUTINY: SYSTEM/SCRUTINY_OFFICER
+    UNDER_SCRUTINY --> OFFICER_VERIFIED: VERIFYING_OFFICER
+    OFFICER_VERIFIED --> SELECTED: COMMITTEE_MEMBER
+    OFFICER_VERIFIED --> NOT_SELECTED: COMMITTEE_MEMBER
+    OFFICER_VERIFIED --> WAITLISTED: COMMITTEE_MEMBER
+    SELECTED --> APPROVED: ADMIN
+    APPROVED --> AWARDED: ADMIN
+    AWARDED --> CLOSED: ADMIN
+```

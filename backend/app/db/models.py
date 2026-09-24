@@ -175,6 +175,30 @@ class Application(Entity):
     )
 
 
+class ApplicationStatusHistory(Base):
+    __tablename__ = "application_status_history"
+    __table_args__ = (
+        Index(
+            "ix_application_status_history_application_created",
+            "application_id",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+    )
+    from_status: Mapped[str | None] = mapped_column(String(32))
+    to_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    actor_role: Mapped[str | None] = mapped_column(String(32))
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ApplicationDocument(Entity):
     __tablename__ = "application_documents"
     __table_args__ = (
