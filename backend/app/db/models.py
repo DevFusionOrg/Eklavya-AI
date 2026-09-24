@@ -76,6 +76,10 @@ class SchemeVersion(Base):
         CheckConstraint(
             "version_number > 0", name="ck_scheme_versions_positive_version"
         ),
+        CheckConstraint(
+            "status IN ('DRAFT', 'PUBLISHED', 'RETIRED')",
+            name="ck_scheme_versions_status",
+        ),
         Index(
             "ix_scheme_versions_scheme_version",
             "scheme_id",
@@ -90,10 +94,24 @@ class SchemeVersion(Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     rules: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)
+    form_schema: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)
+    ui_hints: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
+    eligibility_rules: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
+    selection_rules: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(16), default="DRAFT", nullable=False)
     effective_from: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
     effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    open_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -111,6 +129,9 @@ class SchemeDocumentRequired(Entity):
     doc_type: Mapped[str] = mapped_column(String(64), nullable=False)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     is_mandatory: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    validity_rules: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
 
 
 class Applicant(Entity):
