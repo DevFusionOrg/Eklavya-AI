@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     ocr_task_max_retries: int = 3
     max_correction_rounds: int = 2
     correction_deadline_days: int = 14
+    ai_provider: str = "mock"
+    ai_model: str = "rules-only"
+    ai_api_key: str = ""
+    ai_temperature: float = 0.0
+    ai_max_retries: int = 2
 
     model_config = SettingsConfigDict(
         env_file=".env",

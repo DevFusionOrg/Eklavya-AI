@@ -308,6 +308,7 @@ class AiRecommendation(Entity):
     )
     model: Mapped[str] = mapped_column(String(128), nullable=False)
     prompt_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    response_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     output: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)
     confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
 
