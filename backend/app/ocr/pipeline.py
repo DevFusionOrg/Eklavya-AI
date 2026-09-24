@@ -96,7 +96,7 @@ async def _validate_if_ready(session: Any, application_id: Any) -> None:
             .where(Application.id == application_id)
             .with_for_update()
         )
-        if application and application.status == "SUBMITTED":
+        if application and application.status in {"SUBMITTED", "RESUBMITTED"}:
             from app.applications.service import ApplicationService
 
             await ApplicationService(session).transition(

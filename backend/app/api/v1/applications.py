@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,11 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.applications.service import ApplicationService, validate_form_data
 from app.auth.dependencies import get_current_user, require_roles
+from app.core.config import settings
 from app.core.errors import DomainError
 from app.db.models import (
     Applicant,
     Application,
     ApplicationStatusHistory,
+    Deficiency,
     SchemeVersion,
     User,
 )
@@ -95,6 +98,25 @@ async def autosave_draft(
             "Only draft or deficient applications can be edited",
             409,
         )
+    if application.status == "DEFICIENT":
+        flagged = set(
+            (
+                await session.scalars(
+                    select(Deficiency.field).where(
+                        Deficiency.application_id == application.id,
+                        Deficiency.status == "OPEN",
+                        Deficiency.field.is_not(None),
+                    )
+                )
+            ).all()
+        )
+        forbidden = set(payload.form_data) - flagged
+        if forbidden:
+            raise DomainError(
+                "FIELD_NOT_FLAGGED",
+                f"Only flagged fields can be corrected: {', '.join(sorted(forbidden))}",
+                422,
+            )
     version = await session.get(SchemeVersion, application.scheme_version_id)
     if version is None:
         raise DomainError("SCHEME_VERSION_NOT_FOUND", "Scheme version not found", 409)
@@ -113,6 +135,62 @@ async def autosave_draft(
         "id": str(application.id),
         "status": application.status,
         "form_data": application.form_data,
+    }
+
+
+@router.post("/{application_id}/resubmit")
+async def resubmit_application(
+    application_id: uuid.UUID,
+    applicant: Annotated[Applicant, Depends(get_applicant)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, Any]:
+    application = await owned_application(application_id, applicant, session)
+    if application.status != "DEFICIENT":
+        raise DomainError(
+            "APPLICATION_NOT_DEFICIENT", "Application has no corrections due", 409
+        )
+    version = await session.get(SchemeVersion, application.scheme_version_id)
+    if version is None:
+        raise DomainError("SCHEME_VERSION_NOT_FOUND", "Scheme version not found", 409)
+    config = version.rules.get("validation", {})
+    max_rounds = int(
+        config.get("max_correction_rounds", settings.max_correction_rounds)
+    )
+    if application.correction_round >= max_rounds:
+        await ApplicationService(session).transition(
+            application,
+            target="CLOSED",
+            actor_id=None,
+            actor_role="SYSTEM",
+            reason="Maximum correction rounds exceeded",
+        )
+        await session.commit()
+        raise DomainError(
+            "CORRECTION_ROUNDS_EXCEEDED", "Maximum correction rounds exceeded", 409
+        )
+    if (
+        application.correction_deadline
+        and application.correction_deadline < datetime.now(UTC)
+    ):
+        raise DomainError(
+            "CORRECTION_DEADLINE_EXPIRED", "Correction deadline has expired", 409
+        )
+    application.correction_round += 1
+    await ApplicationService(session).transition(
+        application,
+        target="RESUBMITTED",
+        actor_id=applicant.user_id,
+        actor_role="APPLICANT",
+        reason=f"Correction round {application.correction_round} submitted",
+    )
+    from app.validation.service import validate_application
+
+    await validate_application(session, application.id)
+    await session.commit()
+    return {
+        "id": str(application.id),
+        "status": application.status,
+        "correction_round": application.correction_round,
     }
 
 
@@ -193,6 +271,42 @@ async def my_applications(
         }
         for item in applications
     ]
+
+
+@router.get("/{application_id}/deficiencies")
+async def application_deficiencies(
+    application_id: uuid.UUID,
+    applicant: Annotated[Applicant, Depends(get_applicant)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, Any]:
+    application = await owned_application(application_id, applicant, session)
+    items = list(
+        (
+            await session.scalars(
+                select(Deficiency)
+                .where(Deficiency.application_id == application.id)
+                .order_by(Deficiency.created_at.asc())
+            )
+        ).all()
+    )
+    cycles = max(application.correction_round, 0)
+    return {
+        "repeat_deficiency_cycles": cycles,
+        "correction_round": application.correction_round,
+        "correction_deadline": application.correction_deadline,
+        "items": [
+            {
+                "id": str(item.id),
+                "code": item.code,
+                "message": item.message,
+                "field": item.field,
+                "document_id": str(item.document_id) if item.document_id else None,
+                "severity": item.severity,
+                "status": item.status,
+            }
+            for item in items
+        ],
+    }
 
 
 @router.get("/{application_id}/timeline")

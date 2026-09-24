@@ -39,6 +39,7 @@ TRANSITIONS = (
     Transition(
         "RESUBMITTED", "UNDER_SCRUTINY", frozenset({"SYSTEM", "SCRUTINY_OFFICER"})
     ),
+    Transition("RESUBMITTED", "DEFICIENT", frozenset({"SYSTEM", "SCRUTINY_OFFICER"})),
     Transition("UNDER_SCRUTINY", "OFFICER_VERIFIED", frozenset({"VERIFYING_OFFICER"})),
     Transition("OFFICER_VERIFIED", "SELECTED", frozenset({"COMMITTEE_MEMBER"})),
     Transition("OFFICER_VERIFIED", "NOT_SELECTED", frozenset({"COMMITTEE_MEMBER"})),
@@ -48,7 +49,7 @@ TRANSITIONS = (
     Transition("AWARDED", "CLOSED", frozenset({"ADMIN"})),
     Transition("DRAFT", "CLOSED", frozenset({"APPLICANT"})),
     Transition("SUBMITTED", "CLOSED", frozenset({"APPLICANT"})),
-    Transition("DEFICIENT", "CLOSED", frozenset({"APPLICANT"})),
+    Transition("DEFICIENT", "CLOSED", frozenset({"APPLICANT", "SYSTEM"})),
 )
 
 

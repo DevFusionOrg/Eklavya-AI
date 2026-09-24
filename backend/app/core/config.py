@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     ocr_engine: str = "mock"
     ocr_languages: list[str] = Field(default_factory=lambda: ["en", "hi"])
     ocr_task_max_retries: int = 3
+    max_correction_rounds: int = 2
+    correction_deadline_days: int = 14
 
     model_config = SettingsConfigDict(
         env_file=".env",

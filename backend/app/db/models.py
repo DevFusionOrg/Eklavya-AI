@@ -173,6 +173,10 @@ class Application(Entity):
     form_data: Mapped[dict[str, Any]] = mapped_column(
         JsonType, default=dict, nullable=False
     )
+    correction_round: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    correction_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
 
 
 class ApplicationStatusHistory(Base):
@@ -272,6 +276,7 @@ class Deficiency(Entity):
     document_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("application_documents.id", ondelete="SET NULL")
     )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ReviewAction(Entity):

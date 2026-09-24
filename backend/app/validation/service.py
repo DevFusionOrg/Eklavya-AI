@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime
 from difflib import SequenceMatcher
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.applications.service import ApplicationService
@@ -17,6 +17,7 @@ from app.db.models import (
     SchemeDocumentRequired,
     SchemeVersion,
 )
+from app.notifications.service import notify_deficiency, set_correction_deadline
 from app.rules.engine import evaluate
 
 DEFAULT_CONFIDENCE_THRESHOLD = 0.75
@@ -92,12 +93,16 @@ async def validate_application(
     if any(document.ocr_status in {"PENDING", "PROCESSING"} for document in documents):
         return []
 
-    await session.execute(
-        delete(Deficiency).where(
-            Deficiency.application_id == application.id,
-            Deficiency.raised_by_type == "SYSTEM",
-            Deficiency.status == "OPEN",
-        )
+    existing = list(
+        (
+            await session.scalars(
+                select(Deficiency).where(
+                    Deficiency.application_id == application.id,
+                    Deficiency.raised_by_type == "SYSTEM",
+                    Deficiency.status == "OPEN",
+                )
+            )
+        ).all()
     )
     fields = list(
         (
@@ -115,6 +120,10 @@ async def validate_application(
     config = _config(version)
     threshold = float(config.get("confidence_threshold", DEFAULT_CONFIDENCE_THRESHOLD))
     deficiencies: list[Deficiency] = []
+    existing_by_key = {
+        (item.code, item.field, item.document_id): item for item in existing
+    }
+    active_keys: set[tuple[str, str | None, Any]] = set()
 
     def add(
         code: str,
@@ -125,17 +134,24 @@ async def validate_application(
         field: str | None = None,
         document_id: Any = None,
     ) -> None:
-        deficiency = Deficiency(
-            application_id=application.id,
-            code=code,
-            message=_message(en, hi),
-            severity=severity,
-            status="OPEN",
-            raised_by_type="SYSTEM",
-            field=field,
-            document_id=document_id,
-        )
-        session.add(deficiency)
+        key = (code, field, document_id)
+        active_keys.add(key)
+        deficiency = existing_by_key.get(key)
+        if deficiency is None:
+            deficiency = Deficiency(
+                application_id=application.id,
+                code=code,
+                message=_message(en, hi),
+                severity=severity,
+                status="OPEN",
+                raised_by_type="SYSTEM",
+                field=field,
+                document_id=document_id,
+            )
+            session.add(deficiency)
+        else:
+            deficiency.status = "OPEN"
+            deficiency.resolved_at = None
         deficiencies.append(deficiency)
 
     for required_document in required:
@@ -150,6 +166,7 @@ async def validate_application(
                     f"Required document missing: {required_document.label}",
                     f"आवश्यक दस्तावेज़ अनुपस्थित है: {required_document.label}",
                     "HIGH",
+                    field=f"document:{required_document.doc_type}",
                 )
             continue
         if matching.ocr_status == "FAILED":
@@ -227,7 +244,17 @@ async def validate_application(
                 }.get(result.severity, "HIGH"),
             )
 
+    for deficiency in existing:
+        if (
+            deficiency.code,
+            deficiency.field,
+            deficiency.document_id,
+        ) not in active_keys:
+            deficiency.status = "RESOLVED"
+            deficiency.resolved_at = datetime.now(UTC)
+
     if deficiencies:
+        await set_correction_deadline(application, config)
         await ApplicationService(session).transition(
             application,
             target="DEFICIENT",
@@ -235,7 +262,13 @@ async def validate_application(
             actor_role="SYSTEM",
             reason="Automated validation found deficiencies",
         )
+        await notify_deficiency(
+            session,
+            application,
+            f"Application requires correction. Open deficiencies: {len(deficiencies)}.",
+        )
     else:
+        application.correction_deadline = None
         await ApplicationService(session).transition(
             application,
             target="UNDER_SCRUTINY",

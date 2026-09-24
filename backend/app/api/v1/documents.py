@@ -9,7 +9,7 @@ from app.applications.api_helpers import owned_application_for_user
 from app.audit.service import AuditService
 from app.auth.dependencies import get_current_user
 from app.core.config import settings
-from app.db.models import ApplicationDocument, User
+from app.db.models import ApplicationDocument, Deficiency, User
 from app.db.session import get_db_session
 from app.storage.antivirus import NoOpAntivirus
 from app.storage.quality import check_image_quality
@@ -36,6 +36,36 @@ async def upload_document(
         raise HTTPException(
             status_code=409, detail="Documents can only be attached to drafts"
         )
+    if application.status == "DEFICIENT":
+        flagged_types = {
+            str(item).split(":", 1)[1]
+            for item in (
+                await session.scalars(
+                    select(Deficiency.field).where(
+                        Deficiency.application_id == application.id,
+                        Deficiency.status == "OPEN",
+                        Deficiency.field.like("document:%"),
+                    )
+                )
+            ).all()
+            if item and ":" in str(item)
+        }
+        flagged_documents = set(
+            (
+                await session.scalars(
+                    select(Deficiency.document_id).where(
+                        Deficiency.application_id == application.id,
+                        Deficiency.status == "OPEN",
+                        Deficiency.document_id.is_not(None),
+                    )
+                )
+            ).all()
+        )
+        if not flagged_documents and doc_type not in flagged_types:
+            raise HTTPException(
+                status_code=422,
+                detail="Only documents referenced by an open deficiency can be replaced",
+            )
     max_size = settings.document_max_sizes.get(
         doc_type, settings.document_max_size_bytes
     )
