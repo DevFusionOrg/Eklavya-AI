@@ -177,6 +177,12 @@ class Application(Entity):
     correction_deadline: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )
+    scrutiny_officer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    verifying_officer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
 
 
 class ApplicationStatusHistory(Base):
@@ -291,6 +297,9 @@ class ReviewAction(Entity):
     )
     action: Mapped[str] = mapped_column(String(64), nullable=False)
     remarks: Mapped[str | None] = mapped_column(Text)
+    override_source: Mapped[str] = mapped_column(
+        String(16), default="NONE", nullable=False
+    )
 
 
 class AiRecommendation(Entity):
