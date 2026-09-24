@@ -118,6 +118,107 @@ export type DeficiencyResponse = {
   items: Deficiency[];
 };
 
+export type QueueItem = {
+  id: string;
+  scheme: string;
+  status: string;
+  scrutiny_officer_id: string | null;
+  verifying_officer_id: string | null;
+};
+
+export type ReviewDocument = {
+  id: string;
+  doc_type: string;
+  mime: string;
+  ocr_status: string;
+  signed_url: string;
+  expires_in: number;
+};
+
+export type ExtractedField = {
+  field: string;
+  value: unknown;
+  confidence: number;
+  bbox: number[] | null;
+  document_id: string;
+};
+
+export type RuleResult = {
+  rule_id?: string;
+  passed?: boolean;
+  pass?: boolean;
+  reason?: string;
+  inputs?: Record<string, unknown>;
+};
+
+export type ReviewPayload = {
+  application: {
+    id: string;
+    status: string;
+    form_data: Record<string, unknown>;
+  };
+  documents: ReviewDocument[];
+  extracted_fields: ExtractedField[];
+  rules: RuleResult[];
+  ai_recommendation: {
+    summary?: string;
+    suggested_action?: string;
+    confidence?: number;
+    flagged_risks?: string[];
+    criteria?: Array<{ criterion?: string; assessment?: string; passed?: boolean }>;
+    evidence?: Array<{ field?: string; document_id?: string; bbox?: number[]; quote?: string }>;
+  } | null;
+};
+
+export async function getOfficerQueue(params: {
+  scheme?: string;
+  status?: string;
+  deficiency_severity?: string;
+  confidence_band?: string;
+  sort?: string;
+}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+  return apiRequest<{ items: QueueItem[]; page: number; page_size: number; total: number }>(
+    `/api/v1/officer/queue?${query.toString()}`,
+  );
+}
+
+export async function claimApplication(applicationId: string) {
+  return apiRequest<{ id: string; claimed_by: string; role: string }>(
+    `/api/v1/officer/applications/${applicationId}/claim`,
+    { method: "POST" },
+  );
+}
+
+export async function getReviewPayload(applicationId: string) {
+  return apiRequest<ReviewPayload>(
+    `/api/v1/officer/applications/${applicationId}/review`,
+  );
+}
+
+export type OfficerAction = {
+  action: "VERIFY" | "RAISE_DEFICIENCY" | "REJECT" | "ESCALATE";
+  reason_code?: string;
+  remarks?: string;
+  field?: string;
+  document_id?: string;
+  severity?: string;
+  override_source?: "NONE" | "AI" | "RULES";
+};
+
+export async function submitOfficerAction(
+  applicationId: string,
+  action: OfficerAction,
+) {
+  return apiRequest<{ id: string; status: string; action: string }>(
+    `/api/v1/officer/applications/${applicationId}/actions`,
+    { method: "POST", body: JSON.stringify(action) },
+  );
+}
+
 export async function listMyApplications() {
   return apiRequest<ApplicationSummary[]>("/api/v1/applications");
 }
