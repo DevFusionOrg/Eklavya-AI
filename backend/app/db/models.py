@@ -246,7 +246,7 @@ class Deficiency(Entity):
     __tablename__ = "deficiencies"
     __table_args__ = (
         CheckConstraint(
-            "severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')",
+            "severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'NEEDS_REVIEW', 'BLOCKER', 'WARNING')",
             name="ck_deficiencies_severity",
         ),
         CheckConstraint(
@@ -268,6 +268,10 @@ class Deficiency(Entity):
     status: Mapped[str] = mapped_column(String(16), default="OPEN", nullable=False)
     raised_by_type: Mapped[str] = mapped_column(String(16), nullable=False)
     raised_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    field: Mapped[str | None] = mapped_column(String(128))
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("application_documents.id", ondelete="SET NULL")
+    )
 
 
 class ReviewAction(Entity):

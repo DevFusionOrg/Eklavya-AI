@@ -1,0 +1,1 @@
+"""Cross-document application validation."""
