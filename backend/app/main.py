@@ -1,9 +1,52 @@
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-app = FastAPI(title="Eklavya.AI API", version="0.1.0")
+from app.api.v1.health import router as health_router
+from app.core.config import settings
+from app.core.errors import (
+    DomainError,
+    domain_error_handler,
+    http_error_handler,
+    validation_error_handler,
+)
+from app.core.logging import RequestIdMiddleware, configure_logging
 
 
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+def create_app() -> FastAPI:
+    configure_logging(settings.log_level)
 
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        from app.db.session import engine
+
+        await engine.dispose()
+
+    application = FastAPI(
+        title=settings.app_name, version=settings.app_version, lifespan=lifespan
+    )
+    application.add_middleware(RequestIdMiddleware)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    application.add_exception_handler(DomainError, domain_error_handler)
+    application.add_exception_handler(StarletteHTTPException, http_error_handler)
+    application.add_exception_handler(RequestValidationError, validation_error_handler)
+    application.include_router(health_router, prefix="/api/v1")
+    application.include_router(health_router)
+
+    logging.getLogger(__name__).info("application_started")
+    return application
+
+
+app = create_app()
