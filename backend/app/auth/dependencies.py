@@ -29,6 +29,8 @@ async def get_current_user(
     try:
         claims = decode_token(credentials.credentials, "access")
         user_id = uuid.UUID(claims["sub"])
+        if await is_token_revoked(claims["jti"]):
+            raise jwt.InvalidTokenError("Revoked token")
     except (ValueError, KeyError, jwt.PyJWTError) as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"

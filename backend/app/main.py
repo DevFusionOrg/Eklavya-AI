@@ -7,8 +7,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.v1.audit import router as audit_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.health import router as health_router
+from app.audit.middleware import MutationAuditMiddleware
 from app.core.config import settings
 from app.core.errors import (
     DomainError,
@@ -33,6 +35,7 @@ def create_app() -> FastAPI:
         title=settings.app_name, version=settings.app_version, lifespan=lifespan
     )
     application.add_middleware(RequestIdMiddleware)
+    application.add_middleware(MutationAuditMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -46,6 +49,7 @@ def create_app() -> FastAPI:
     application.include_router(health_router, prefix="/api/v1")
     application.include_router(health_router)
     application.include_router(auth_router, prefix="/api/v1")
+    application.include_router(audit_router, prefix="/api/v1")
 
     logging.getLogger(__name__).info("application_started")
     return application
