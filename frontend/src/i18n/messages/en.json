@@ -1,0 +1,9 @@
+{
+  "common": {
+    "appName": "Eklavya.AI",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "applicantPortal": "Applicant portal",
+    "officerPortal": "Officer portal"
+  }
+}

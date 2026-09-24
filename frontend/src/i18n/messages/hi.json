@@ -1,0 +1,9 @@
+{
+  "common": {
+    "appName": "Eklavya.AI",
+    "signIn": "साइन इन",
+    "signOut": "साइन आउट",
+    "applicantPortal": "आवेदक पोर्टल",
+    "officerPortal": "अधिकारी पोर्टल"
+  }
+}
