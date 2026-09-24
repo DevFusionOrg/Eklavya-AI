@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     minio_secure: bool = False
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     log_level: str = "INFO"
+    jwt_secret: str = "replace-with-a-long-random-secret"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
+    auth_rate_limit: int = 10
+    auth_rate_window_seconds: int = 60
+    max_login_failures: int = 5
+    lockout_minutes: int = 15
 
     model_config = SettingsConfigDict(
         env_file=".env",
