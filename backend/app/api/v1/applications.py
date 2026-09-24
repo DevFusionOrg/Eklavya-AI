@@ -16,6 +16,7 @@ from app.db.models import (
     Application,
     ApplicationStatusHistory,
     Deficiency,
+    Scheme,
     SchemeVersion,
     User,
 )
@@ -263,11 +264,30 @@ async def my_applications(
             )
         ).all()
     )
+    versions = {
+        version_id: (code, name)
+        for version_id, code, name in (
+            await session.execute(
+                select(SchemeVersion.id, Scheme.code, Scheme.name)
+                .join(Scheme, Scheme.id == SchemeVersion.scheme_id)
+                .where(
+                    SchemeVersion.id.in_(
+                        {item.scheme_version_id for item in applications}
+                    )
+                )
+            )
+        ).all()
+    }
     return [
         {
             "id": str(item.id),
             "status": item.status,
             "scheme_version_id": str(item.scheme_version_id),
+            "scheme_code": versions.get(item.scheme_version_id, ("", ""))[0],
+            "scheme_name": versions.get(item.scheme_version_id, ("", ""))[1],
+            "form_data": item.form_data,
+            "correction_round": item.correction_round,
+            "correction_deadline": item.correction_deadline,
         }
         for item in applications
     ]

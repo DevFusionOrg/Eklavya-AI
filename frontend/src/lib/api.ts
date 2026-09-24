@@ -87,6 +87,60 @@ export type ApplicationDraft = {
   form_data?: Record<string, unknown>;
 };
 
+export type ApplicationSummary = ApplicationDraft & {
+  scheme_code: string;
+  scheme_name: string;
+  correction_round: number;
+  correction_deadline: string | null;
+};
+
+export type TimelineEntry = {
+  from_status: string | null;
+  to_status: string;
+  reason: string | null;
+  created_at: string;
+};
+
+export type Deficiency = {
+  id: string;
+  code: string;
+  message: string;
+  field: string | null;
+  document_id: string | null;
+  severity: string;
+  status: string;
+};
+
+export type DeficiencyResponse = {
+  repeat_deficiency_cycles: number;
+  correction_round: number;
+  correction_deadline: string | null;
+  items: Deficiency[];
+};
+
+export async function listMyApplications() {
+  return apiRequest<ApplicationSummary[]>("/api/v1/applications");
+}
+
+export async function getApplicationTimeline(applicationId: string) {
+  return apiRequest<TimelineEntry[]>(
+    `/api/v1/applications/${applicationId}/timeline`,
+  );
+}
+
+export async function getApplicationDeficiencies(applicationId: string) {
+  return apiRequest<DeficiencyResponse>(
+    `/api/v1/applications/${applicationId}/deficiencies`,
+  );
+}
+
+export async function resubmitApplication(applicationId: string) {
+  return apiRequest<{ id: string; status: string; correction_round: number }>(
+    `/api/v1/applications/${applicationId}/resubmit`,
+    { method: "POST" },
+  );
+}
+
 export async function listSchemes() {
   return apiRequest<Scheme[]>("/api/v1/schemes");
 }
