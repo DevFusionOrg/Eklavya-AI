@@ -71,6 +71,14 @@ class MinioDocumentStorage:
     def delete(self, object_key: str) -> None:
         self.client.remove_object(settings.minio_bucket, object_key)
 
+    def get(self, object_key: str) -> bytes:
+        response = self.client.get_object(settings.minio_bucket, object_key)
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()
+
     def presigned_get(self, object_key: str) -> str:
         return self.client.presigned_get_object(
             settings.minio_bucket,

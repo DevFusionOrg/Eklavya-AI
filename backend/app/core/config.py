@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     document_max_size_bytes: int = 10 * 1024 * 1024
     document_max_sizes: dict[str, int] = Field(default_factory=dict)
     document_url_expiry_seconds: int = 300
+    ocr_engine: str = "mock"
+    ocr_languages: list[str] = Field(default_factory=lambda: ["en", "hi"])
+    ocr_task_max_retries: int = 3
 
     model_config = SettingsConfigDict(
         env_file=".env",

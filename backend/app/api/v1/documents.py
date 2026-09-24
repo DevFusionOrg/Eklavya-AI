@@ -95,6 +95,9 @@ async def upload_document(
         after={"doc_type": doc_type, "checksum": checksum, "size": size},
     )
     await session.commit()
+    from app.ocr.pipeline import process_document
+
+    process_document.delay(str(document.id))
     return {
         "accepted": True,
         "document_id": str(document.id),
