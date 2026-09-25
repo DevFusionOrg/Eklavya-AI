@@ -48,6 +48,28 @@ export type Scheme = {
   is_active: boolean;
 };
 
+export type SchemeVersion = {
+  id: string;
+  scheme_id: string;
+  version_number: number;
+  status: string;
+  form_schema: Record<string, unknown>;
+  ui_hints: Record<string, unknown>;
+  eligibility_rules: Record<string, unknown>;
+  selection_rules: Record<string, unknown>;
+  rules: Record<string, unknown>;
+  effective_from: string | null;
+  effective_to: string | null;
+  open_at: string | null;
+  close_at: string | null;
+};
+
+export type AdminOfficer = { id: string; email: string; role: Role; is_active: boolean };
+export type AuditEntry = {
+  id: string; actor_role: string | null; action: string; entity_type: string;
+  entity_id: string; reason: string | null; created_at: string; row_hash: string;
+};
+
 export type FormProperty = {
   type: "string" | "number" | "integer" | "boolean" | "array" | "object";
   title?: string;
@@ -382,6 +404,48 @@ export async function resubmitApplication(applicationId: string) {
 
 export async function listSchemes() {
   return apiRequest<Scheme[]>("/api/v1/schemes");
+}
+
+export async function createScheme(payload: { code: string; name: string; description?: string }) {
+  return apiRequest<Scheme>("/api/v1/schemes", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function listSchemeVersions(schemeId: string) {
+  return apiRequest<SchemeVersion[]>(`/api/v1/schemes/${schemeId}/versions`);
+}
+
+export async function createSchemeVersion(schemeId: string, payload: Record<string, unknown>) {
+  return apiRequest<SchemeVersion>(`/api/v1/schemes/${schemeId}/versions`, {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export async function publishSchemeVersion(schemeId: string, versionId: string) {
+  return apiRequest<SchemeVersion>(`/api/v1/schemes/${schemeId}/versions/${versionId}/publish`, { method: "POST" });
+}
+
+export async function dryRunRules(schemeId: string, payload: Record<string, unknown>) {
+  return apiRequest<Record<string, unknown>>(`/api/v1/schemes/${schemeId}/rules/dry-run`, {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export async function listOfficers() {
+  return apiRequest<AdminOfficer[]>("/api/v1/auth/officers");
+}
+
+export async function createOfficer(email: string, password: string, role: "SCRUTINY_OFFICER" | "VERIFYING_OFFICER") {
+  return apiRequest<{ id: string; role: string }>("/api/v1/auth/officers", {
+    method: "POST", body: JSON.stringify({ email, password, role }),
+  });
+}
+
+export async function listAuditHistory() {
+  return apiRequest<AuditEntry[]>("/api/v1/audit/history");
+}
+
+export async function verifyAuditChain() {
+  return apiRequest<{ valid: boolean; rows_checked: number; first_broken_link: unknown }>("/api/v1/audit/verify");
 }
 
 export async function getSchemeForm(code: string) {

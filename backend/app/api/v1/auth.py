@@ -39,6 +39,10 @@ class Credentials(BaseModel):
         return value
 
 
+class OfficerCredentials(Credentials):
+    role: str = Field(default="SCRUTINY_OFFICER", pattern="^(SCRUTINY_OFFICER|VERIFYING_OFFICER)$")
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
@@ -162,7 +166,7 @@ async def logout(
 
 @router.post("/officers", response_model=dict[str, str], status_code=201)
 async def create_officer(
-    credentials: Credentials,
+    credentials: OfficerCredentials,
     _: Annotated[User, Depends(require_roles("ADMIN"))],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, str]:
@@ -172,8 +176,28 @@ async def create_officer(
     user = User(
         email=str(credentials.email).lower(),
         password_hash=hash_password(credentials.password),
-        role="SCRUTINY_OFFICER",
+        role=credentials.role,
     )
     session.add(user)
     await session.commit()
     return {"id": str(user.id), "role": user.role}
+
+
+@router.get("/officers")
+async def list_officers(
+    _: Annotated[User, Depends(require_roles("ADMIN"))],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[dict[str, str | bool]]:
+    users = list(
+        (
+            await session.scalars(
+                select(User)
+                .where(User.role.in_(("SCRUTINY_OFFICER", "VERIFYING_OFFICER")))
+                .order_by(User.email)
+            )
+        ).all()
+    )
+    return [
+        {"id": str(user.id), "email": user.email, "role": user.role, "is_active": user.is_active}
+        for user in users
+    ]

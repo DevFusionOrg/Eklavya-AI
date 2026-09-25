@@ -8,7 +8,7 @@ export function Shell({
   kind,
   children,
 }: {
-  kind: "applicant" | "officer";
+  kind: "applicant" | "officer" | "admin";
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -17,6 +17,8 @@ export function Shell({
   const links =
     kind === "applicant"
       ? [{ href: "/applicant", label: "My applications" }]
+      : kind === "admin"
+        ? [{ href: "/admin", label: "Administration" }]
       : [
           { href: "/officer", label: "Scrutiny queue" },
           { href: "/officer/review", label: "Verification" },

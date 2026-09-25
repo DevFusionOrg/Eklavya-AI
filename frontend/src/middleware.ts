@@ -9,10 +9,13 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/officer") && !role) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
+  if (pathname.startsWith("/admin") && role !== "ADMIN") {
+    return NextResponse.redirect(new URL(role ? "/officer" : "/login", request.url));
+  }
   if (pathname === "/login" && role) {
     return NextResponse.redirect(new URL(role === "APPLICANT" ? "/applicant" : "/officer", request.url));
   }
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/login", "/applicant/:path*", "/officer/:path*"] };
+export const config = { matcher: ["/login", "/applicant/:path*", "/officer/:path*", "/admin/:path*"] };

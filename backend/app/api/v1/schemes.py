@@ -188,6 +188,24 @@ async def create_version(
     return version
 
 
+@router.get("/{scheme_id}/versions", response_model=list[VersionResponse])
+async def list_versions(
+    scheme_id: uuid.UUID,
+    _: Annotated[User, Depends(require_roles("ADMIN"))],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[SchemeVersion]:
+    await get_scheme_or_404(scheme_id, session)
+    return list(
+        (
+            await session.scalars(
+                select(SchemeVersion)
+                .where(SchemeVersion.scheme_id == scheme_id)
+                .order_by(SchemeVersion.version_number.desc())
+            )
+        ).all()
+    )
+
+
 @router.post(
     "/{scheme_id}/versions/{version_id}/publish", response_model=VersionResponse
 )
