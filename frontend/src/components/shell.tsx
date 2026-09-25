@@ -20,6 +20,7 @@ export function Shell({
       : [
           { href: "/officer", label: "Scrutiny queue" },
           { href: "/officer/review", label: "Verification" },
+          { href: "/officer/analytics", label: "Analytics" },
         ];
 
   function signOut() {

@@ -314,6 +314,49 @@ export async function getNotificationHistory() {
   return apiRequest<NotificationHistoryItem[]>("/api/v1/notifications/history");
 }
 
+export type AnalyticsSummary = {
+  generated_at: string;
+  definitions: Record<string, string>;
+  funnel: Array<{ stage: string; count: number }>;
+  average_time_per_stage_days: Record<string, number>;
+  deficiency_causes: Array<{ code: string; count: number }>;
+  repeat_deficiency_rate: { numerator: number; denominator: number; rate: number };
+  override_rate: {
+    numerator: number;
+    denominator: number;
+    rate: number;
+    by_source: Record<string, number>;
+  };
+  ocr_confidence: Record<string, number>;
+  scheme_performance: Array<{ scheme: string; statuses: Record<string, number> }>;
+  state_distribution: Array<{ state: string; count: number }>;
+  totals: Record<string, number>;
+};
+
+export async function getAnalyticsSummary() {
+  return apiRequest<AnalyticsSummary>("/api/v1/analytics/summary");
+}
+
+export function analyticsExportUrl(format: "csv" | "pdf") {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  return `${base}/api/v1/analytics/export?format=${format}`;
+}
+
+export async function downloadAnalytics(format: "csv" | "pdf") {
+  const token = accessToken();
+  const response = await fetch(analyticsExportUrl(format), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) throw new Error("Report export failed");
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `analytics.${format}`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function listMyApplications() {
   return apiRequest<ApplicationSummary[]>("/api/v1/applications");
 }
