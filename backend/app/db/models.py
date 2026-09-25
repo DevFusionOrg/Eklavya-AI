@@ -431,6 +431,23 @@ class Notification(Entity):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(16), default="PENDING", nullable=False)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    template_key: Mapped[str | None] = mapped_column(String(64))
+    locale: Mapped[str] = mapped_column(String(8), default="en", nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    provider_message_id: Mapped[str | None] = mapped_column(String(255))
+
+
+class NotificationPreference(Entity):
+    __tablename__ = "notification_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    locale: Mapped[str] = mapped_column(String(8), default="en", nullable=False)
+    sms_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class AuditLog(Base):

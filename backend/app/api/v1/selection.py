@@ -284,6 +284,7 @@ async def approve_selection(
             session,
             application,
             f"Selection result: {target}. Please check your application.",
+            template_key="selection",
         )
     await AuditService(session).append(
         actor_id=user.id,

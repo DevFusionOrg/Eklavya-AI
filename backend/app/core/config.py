@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_temperature: float = 0.0
     ai_max_retries: int = 2
+    email_driver: str = "console"
+    sms_driver: str = "console"
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "no-reply@eklavya.ai"
+    smtp_starttls: bool = True
+    sms_http_url: str = ""
+    sms_http_token: str = ""
+    notification_max_retries: int = 3
 
     model_config = SettingsConfigDict(
         env_file=".env",

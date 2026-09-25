@@ -277,6 +277,43 @@ export async function reviewFollowup(
   );
 }
 
+export type NotificationPreference = {
+  locale: "en" | "hi";
+  sms_enabled: boolean;
+  email_enabled: boolean;
+  in_app_enabled: boolean;
+};
+
+export type NotificationHistoryItem = {
+  id: string;
+  channel: "SMS" | "EMAIL" | "IN_APP";
+  subject: string | null;
+  message: string;
+  status: "PENDING" | "SENT" | "FAILED";
+  template_key: string | null;
+  locale: string;
+  retry_count: number;
+  created_at: string;
+  sent_at: string | null;
+};
+
+export async function getNotificationPreferences() {
+  return apiRequest<NotificationPreference>("/api/v1/notifications/preferences");
+}
+
+export async function updateNotificationPreferences(
+  preferences: NotificationPreference,
+) {
+  return apiRequest<NotificationPreference>("/api/v1/notifications/preferences", {
+    method: "PATCH",
+    body: JSON.stringify(preferences),
+  });
+}
+
+export async function getNotificationHistory() {
+  return apiRequest<NotificationHistoryItem[]>("/api/v1/notifications/history");
+}
+
 export async function listMyApplications() {
   return apiRequest<ApplicationSummary[]>("/api/v1/applications");
 }
