@@ -219,6 +219,64 @@ export async function submitOfficerAction(
   );
 }
 
+export type AwardSummary = {
+  id: string;
+  application_id: string;
+  amount: string;
+  instalments: Array<{ label: string; amount: string; due_date: string | null }>;
+  status: string;
+  requirements: Array<{
+    id: string;
+    name: string;
+    type: string;
+    due_date: string | null;
+    status: string;
+  }>;
+};
+
+export async function listMyAwards() {
+  return apiRequest<AwardSummary[]>("/api/v1/followups/mine");
+}
+
+export async function submitFollowup(
+  requirementId: string,
+  data: Record<string, unknown>,
+  documentId?: string,
+) {
+  return apiRequest<{ id: string; requirement_id: string; status: string }>(
+    `/api/v1/followups/${requirementId}/submissions`,
+    {
+      method: "POST",
+      body: JSON.stringify({ data, document_id: documentId || null }),
+    },
+  );
+}
+
+export type FollowupReviewItem = {
+  id: string;
+  requirement_id: string;
+  requirement: string;
+  application_id: string;
+  award_id: string;
+  data: Record<string, unknown>;
+  document_id: string | null;
+};
+
+export async function listFollowupReviews() {
+  return apiRequest<FollowupReviewItem[]>("/api/v1/followups/review");
+}
+
+export async function reviewFollowup(
+  submissionId: string,
+  status: "ACCEPTED" | "REJECTED",
+  remarks: string,
+) {
+  return apiRequest<{ id: string; status: string }>(
+    `/api/v1/followups/submissions/${submissionId}/review`,
+    { method: "POST", body: JSON.stringify({ status, remarks }) },
+  );
+}
+
 export async function listMyApplications() {
   return apiRequest<ApplicationSummary[]>("/api/v1/applications");
 }
@@ -287,6 +345,7 @@ export async function uploadDocument(
   docType: string,
   file: File,
   onProgress?: (percent: number) => void,
+  followupRequirementId?: string,
 ) {
   const body = new FormData();
   body.append("file", file);
@@ -299,7 +358,7 @@ export async function uploadDocument(
     const request = new XMLHttpRequest();
     request.open(
       "POST",
-      `${API_URL}/api/v1/applications/${applicationId}/documents?doc_type=${encodeURIComponent(docType)}`,
+      `${API_URL}/api/v1/applications/${applicationId}/documents?doc_type=${encodeURIComponent(docType)}${followupRequirementId ? `&followup_requirement_id=${encodeURIComponent(followupRequirementId)}` : ""}`,
     );
     if (token) request.setRequestHeader("Authorization", `Bearer ${token}`);
     request.upload.onprogress = (event) => {

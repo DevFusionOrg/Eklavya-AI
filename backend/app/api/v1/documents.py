@@ -9,7 +9,13 @@ from app.applications.api_helpers import owned_application_for_user
 from app.audit.service import AuditService
 from app.auth.dependencies import get_current_user
 from app.core.config import settings
-from app.db.models import ApplicationDocument, Deficiency, User
+from app.db.models import (
+    ApplicationDocument,
+    Award,
+    Deficiency,
+    FollowupRequirement,
+    User,
+)
 from app.db.session import get_db_session
 from app.storage.antivirus import NoOpAntivirus
 from app.storage.quality import check_image_quality
@@ -30,12 +36,28 @@ async def upload_document(
     file: Annotated[UploadFile, File(...)],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    followup_requirement_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     application = await owned_application_for_user(application_id, user, session)
-    if application.status not in {"DRAFT", "DEFICIENT"}:
+    if application.status not in {"DRAFT", "DEFICIENT", "AWARDED"}:
         raise HTTPException(
             status_code=409, detail="Documents can only be attached to drafts"
         )
+    if application.status == "AWARDED":
+        requirement = await session.scalar(
+            select(FollowupRequirement)
+            .join(Award, Award.id == FollowupRequirement.award_id)
+            .where(
+                FollowupRequirement.id == followup_requirement_id,
+                Award.application_id == application.id,
+                FollowupRequirement.status.in_(("UPCOMING", "OVERDUE", "REJECTED")),
+            )
+        )
+        if requirement is None:
+            raise HTTPException(
+                status_code=422, detail="A valid follow-up requirement is required"
+            )
+        doc_type = f"FOLLOWUP:{requirement.id}"
     if application.status == "DEFICIENT":
         flagged_types = {
             str(item).split(":", 1)[1]

@@ -12,6 +12,7 @@ from app.api.v1.applications import router as applications_router
 from app.api.v1.audit import router as audit_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.documents import router as documents_router
+from app.api.v1.followups import router as followups_router
 from app.api.v1.health import router as health_router
 from app.api.v1.officer import router as officer_router
 from app.api.v1.rules import router as rules_router
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     application.include_router(schemes_router, prefix="/api/v1")
     application.include_router(rules_router, prefix="/api/v1")
     application.include_router(documents_router, prefix="/api/v1")
+    application.include_router(followups_router, prefix="/api/v1")
 
     logging.getLogger(__name__).info("application_started")
     return application

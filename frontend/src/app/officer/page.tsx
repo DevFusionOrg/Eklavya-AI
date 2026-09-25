@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { getOfficerQueue, type QueueItem } from "../../lib/api";
+import FollowupReview from "../../components/followup-review";
 
 const views = {
   "My scrutiny": { status: "UNDER_SCRUTINY" },
@@ -77,6 +78,7 @@ export default function OfficerPage() {
         <div className="border-b border-border p-4"><h2 className="font-bold">Applications requiring attention <span className="ml-2 text-sm font-normal text-muted">{total} total</span></h2></div>
         <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><caption className="sr-only">Officer scrutiny queue</caption><thead className="bg-surface text-xs uppercase text-muted"><tr><th className="px-4 py-3">Application</th><th className="px-4 py-3">Scheme</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Assignment</th><th className="px-4 py-3">Action</th></tr></thead><tbody>{items.map((item) => <tr className="border-t border-border" key={item.id}><td className="px-4 py-4 font-mono text-xs">{item.id.slice(0, 8).toUpperCase()}</td><td className="px-4 py-4 font-semibold">{item.scheme}</td><td className="px-4 py-4">{item.status.replaceAll("_", " ")}</td><td className="px-4 py-4 text-xs text-muted">{item.scrutiny_officer_id ? "Claimed" : "Unassigned"}</td><td className="px-4 py-4"><Link className="rounded-md bg-brand px-3 py-2 font-bold text-white" href={`/officer/review/${item.id}`}>Review</Link></td></tr>)}{!items.length && <tr><td className="px-4 py-8 text-muted" colSpan={5}>No applications match these filters.</td></tr>}</tbody></table></div>
       </div>
+      <FollowupReview />
     </section>
   );
 }

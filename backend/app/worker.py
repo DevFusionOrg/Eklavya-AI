@@ -7,5 +7,9 @@ celery_app.conf.beat_schedule = {
     "expire-correction-deadlines": {
         "task": "app.corrections.expire_correction_deadlines",
         "schedule": 3600.0,
-    }
+    },
+    "mark-overdue-followups": {
+        "task": "app.followups.mark_overdue_followups",
+        "schedule": 3600.0,
+    },
 }

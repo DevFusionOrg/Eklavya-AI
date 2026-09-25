@@ -12,6 +12,7 @@ import {
   type Scheme,
   type TimelineEntry,
 } from "../../lib/api";
+import FollowupPanel from "../../components/followup-panel";
 
 type ApplicationDetails = {
   timeline: TimelineEntry[];
@@ -110,6 +111,7 @@ export default function ApplicantPage() {
           {!schemes.length && <p className="text-sm text-muted">No schemes are open right now.</p>}
         </div>
       </div>
+      <FollowupPanel />
     </section>
   );
 }

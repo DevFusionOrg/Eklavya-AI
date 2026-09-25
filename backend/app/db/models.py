@@ -348,7 +348,8 @@ class Award(Entity):
     __table_args__ = (
         CheckConstraint("amount >= 0", name="ck_awards_amount"),
         CheckConstraint(
-            "status IN ('PLANNED', 'DISBURSED', 'CANCELLED')", name="ck_awards_status"
+            "status IN ('PLANNED', 'DISBURSED', 'ON_HOLD', 'CANCELLED')",
+            name="ck_awards_status",
         ),
     )
 
@@ -356,18 +357,34 @@ class Award(Entity):
         ForeignKey("applications.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    instalments: Mapped[list[dict[str, Any]]] = mapped_column(
+        JsonType, default=list, nullable=False
+    )
     status: Mapped[str] = mapped_column(String(16), default="PLANNED", nullable=False)
+    hold_reason: Mapped[str | None] = mapped_column(Text)
     awarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class FollowupRequirement(Entity):
     __tablename__ = "followup_requirements"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('UPCOMING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'OVERDUE')",
+            name="ck_followup_requirements_status",
+        ),
+        Index("ix_followup_requirements_due_status", "due_date", "status"),
+    )
 
     award_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("awards.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    requirement_type: Mapped[str] = mapped_column(String(64), default="DOCUMENT")
+    validation_schema: Mapped[dict[str, Any]] = mapped_column(
+        JsonType, default=dict, nullable=False
+    )
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default="UPCOMING", nullable=False)
 
 
 class FollowupSubmission(Entity):
@@ -387,6 +404,12 @@ class FollowupSubmission(Entity):
     )
     data: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)
     status: Mapped[str] = mapped_column(String(16), default="SUBMITTED", nullable=False)
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("application_documents.id", ondelete="SET NULL")
+    )
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_remarks: Mapped[str | None] = mapped_column(Text)
 
 
 class Notification(Entity):
