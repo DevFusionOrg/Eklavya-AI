@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     sms_http_url: str = ""
     sms_http_token: str = ""
     notification_max_retries: int = 3
-    max_request_body_bytes: int = 2 * 1024 * 1024
+    max_request_body_bytes: int = 12 * 1024 * 1024
     field_encryption_key: str = "replace-with-a-random-32-byte-encryption-secret"
 
     @field_validator("cors_origins")
