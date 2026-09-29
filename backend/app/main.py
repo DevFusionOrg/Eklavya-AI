@@ -29,6 +29,10 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.core.logging import RequestIdMiddleware, configure_logging
+from app.core.security_middleware import (
+    RequestSizeAndCsrfMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 
 def create_app() -> FastAPI:
@@ -45,13 +49,15 @@ def create_app() -> FastAPI:
         title=settings.app_name, version=settings.app_version, lifespan=lifespan
     )
     application.add_middleware(RequestIdMiddleware)
+    application.add_middleware(RequestSizeAndCsrfMiddleware)
+    application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(MutationAuditMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-CSRF-Token"],
     )
     application.add_exception_handler(DomainError, domain_error_handler)
     application.add_exception_handler(StarletteHTTPException, http_error_handler)

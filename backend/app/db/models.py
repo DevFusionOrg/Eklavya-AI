@@ -21,6 +21,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.db.encrypted import EncryptedString
 
 JsonType = JSON().with_variant(JSONB, "postgresql")
 
@@ -141,11 +142,11 @@ class Applicant(Entity):
         ForeignKey("users.id", ondelete="SET NULL"), unique=True
     )
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    aadhaar_last4: Mapped[str | None] = mapped_column(String(4))
+    aadhaar_last4: Mapped[str | None] = mapped_column(EncryptedString(128))
     aadhaar_hash: Mapped[str | None] = mapped_column(String(128))
     date_of_birth: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    phone: Mapped[str | None] = mapped_column(String(32))
-    email: Mapped[str | None] = mapped_column(String(320))
+    phone: Mapped[str | None] = mapped_column(EncryptedString(512))
+    email: Mapped[str | None] = mapped_column(EncryptedString(512))
     address: Mapped[dict[str, Any] | None] = mapped_column(JsonType)
 
 

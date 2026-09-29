@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,28 @@ class Settings(BaseSettings):
     sms_http_url: str = ""
     sms_http_token: str = ""
     notification_max_retries: int = 3
+    max_request_body_bytes: int = 2 * 1024 * 1024
+    field_encryption_key: str = "replace-with-a-random-32-byte-encryption-secret"
+
+    @field_validator("cors_origins")
+    @classmethod
+    def cors_origins_must_be_explicit(cls, value: list[str]) -> list[str]:
+        if not value or "*" in value:
+            raise ValueError("cors_origins must contain explicit trusted origins")
+        return value
+
+    @model_validator(mode="after")
+    def production_secrets_must_be_changed(self) -> "Settings":
+        if self.environment.lower() not in {"development", "test"}:
+            if len(self.jwt_secret) < 32 or self.jwt_secret.startswith("replace-with-"):
+                raise ValueError("JWT_SECRET must be a unique 32+ character secret")
+            if len(
+                self.field_encryption_key
+            ) < 32 or self.field_encryption_key.startswith("replace-with-"):
+                raise ValueError(
+                    "FIELD_ENCRYPTION_KEY must be a unique 32+ character secret"
+                )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
